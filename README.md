@@ -1,6 +1,6 @@
 # dr-duck
 
-DuckDB and MotherDuck utilities for data ingestion and HuggingFace integration.
+DuckDB and MotherDuck utilities with autocomplete-friendly helpers.
 
 ## Installation
 
@@ -13,82 +13,89 @@ Or with uv:
 uv add dr-duck
 ```
 
-For marimo notebook support:
-```bash
-pip install dr-duck[marimo]
-```
-
-## Features
-
-### MotherDuck Connection
+## Connection Helpers
 
 ```python
-from dr_duck.motherduck import open_motherduck_connection
+from dr_duck import open_motherduck_connection, open_local_connection
 
+# MotherDuck (reads MOTHERDUCK_TOKEN from env)
 conn = open_motherduck_connection()
-```
 
-### HuggingFace Integration
+# Local DuckDB file
+conn = open_local_connection("my_data.duckdb")
 
-```python
-from dr_duck.hf import (
-    HFLocation,
-    cached_download_tables_from_hf,
-    query_hf_with_duckdb,
-    upload_file_to_hf,
-)
+# In-memory
+conn = open_local_connection()  # defaults to :memory:
 
-# Define a HuggingFace location
-loc = HFLocation(repo_id="username/dataset", path="data.parquet")
-
-# Download and cache parquet files
-tables = cached_download_tables_from_hf(loc)
-
-# Query HuggingFace data directly with DuckDB
-result = query_hf_with_duckdb(conn, "SELECT * FROM 'hf://dataset/file.parquet'")
-```
-
-### Configuration
-
-```python
-from dr_duck.configs import AuthSettings, Paths
-
-# Resolve tokens from .env files
-auth = AuthSettings()
-hf_token = auth.resolve("hf")
-md_token = auth.resolve("motherduck")
-
-# Manage paths
-paths = Paths()
-```
-
-### Utilities
-
-```python
-from dr_duck.utils import (
-    add_marimo_display,      # Decorator for marimo notebook integration
-    iter_file_glob_from_roots,  # Recursive file globbing
-    ensure_column,           # DataFrame column utilities
-    fill_missing_values,
-    rename_columns,
-)
-
-from dr_duck import (
-    is_nully,               # Check for null-like values
-    normalize_str,          # String normalization
-    convert_timestamp,      # Timestamp conversion
-    TaskArtifactType,       # Enum for artifact types
+# With .env file and optional secrets
+conn = open_local_connection(
+    "data.duckdb",
+    env_file=".env",
+    hf_token="...",      # or reads HF_TOKEN from env
+    s3_key_id="...",     # or reads AWS_ACCESS_KEY_ID from env
+    s3_secret="...",     # or reads AWS_SECRET_ACCESS_KEY from env
 )
 ```
 
-## Modules
+## Secret Setup
 
-- `dr_duck.motherduck` - MotherDuck connection helpers
-- `dr_duck.hf` - HuggingFace I/O and location management
-- `dr_duck.configs` - Authentication and path configuration
-- `dr_duck.utils` - General utilities (pandas, I/O, display)
-- `dr_duck.normalization` - String and timestamp normalization
-- `dr_duck.types` - Shared type definitions
+```python
+from dr_duck import setup_hf_secret, setup_s3_secret
+
+# Set up HuggingFace secret (enables hf:// URLs)
+setup_hf_secret(conn, token="...")  # or reads HF_TOKEN from env
+
+# Set up S3 secret
+setup_s3_secret(
+    conn,
+    key_id="...",        # or reads AWS_ACCESS_KEY_ID
+    secret="...",        # or reads AWS_SECRET_ACCESS_KEY
+    region="us-west-2",  # or reads AWS_REGION, defaults to us-east-1
+    endpoint="...",      # optional, for S3-compatible services
+)
+```
+
+## Query Helpers
+
+```python
+from dr_duck import query_to_df, query_hf, query_parquet, list_tables, describe_table
+
+# Run any SQL, get DataFrame
+df = query_to_df(conn, "SELECT * FROM my_table LIMIT 10")
+
+# Query HuggingFace dataset
+df = query_hf(conn, "username/dataset", "data/*.parquet")
+df = query_hf(conn, "username/dataset", "train.parquet", sql="SELECT * FROM {table} WHERE x > 5")
+
+# Query parquet file (local or remote)
+df = query_parquet(conn, "s3://bucket/data.parquet")
+df = query_parquet(conn, "data/*.parquet", sql="SELECT col1, col2 FROM {table}")
+
+# Schema inspection
+tables = list_tables(conn)
+schema = describe_table(conn, "my_table")
+```
+
+## DataFrame Helpers
+
+```python
+from dr_duck import insert_df, create_table_from_df
+
+# Insert DataFrame into existing table
+insert_df(conn, df, "my_table")
+
+# Create new table from DataFrame
+create_table_from_df(conn, df, "new_table")
+create_table_from_df(conn, df, "new_table", replace=True)  # CREATE OR REPLACE
+```
+
+## Environment Variables
+
+- `MOTHERDUCK_TOKEN` - Required for `open_motherduck_connection`
+- `HF_TOKEN` - Enables `hf://` URLs in DuckDB queries
+- `AWS_ACCESS_KEY_ID` - For S3 access
+- `AWS_SECRET_ACCESS_KEY` - For S3 access
+- `AWS_REGION` - S3 region (defaults to us-east-1)
 
 ## License
 
