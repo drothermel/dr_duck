@@ -14,6 +14,10 @@ __all__ = [
 ]
 
 
+def _sql_escape(value: str) -> str:
+    return value.replace("'", "''")
+
+
 def open_local_connection(
     path: Path | str = ":memory:",
     *,
@@ -56,7 +60,8 @@ def open_motherduck_connection(
         load_dotenv(env_file)
 
     md_token = motherduck_token or os.environ.get("MOTHERDUCK_TOKEN")
-    assert md_token, "MOTHERDUCK_TOKEN not found in environment or .env file"
+    if not md_token:
+        raise ValueError("MOTHERDUCK_TOKEN not found in environment or .env file")
 
     conn = duckdb.connect(f"md:?motherduck_token={md_token}")
 
@@ -81,12 +86,13 @@ def setup_hf_secret(
     token: str | None = None,
 ) -> None:
     hf = token or os.environ.get("HF_TOKEN")
-    assert hf, "HF_TOKEN not found in environment"
+    if not hf:
+        raise ValueError("HF_TOKEN not found in environment")
     conn.execute(
         f"""
         CREATE SECRET IF NOT EXISTS hf_token (
             TYPE HUGGINGFACE,
-            TOKEN '{hf}'
+            TOKEN '{_sql_escape(hf)}'
         );
         """
     )
@@ -105,20 +111,22 @@ def setup_s3_secret(
     aws_secret = secret or os.environ.get("AWS_SECRET_ACCESS_KEY")
     aws_region = region or os.environ.get("AWS_REGION", "us-east-1")
 
-    assert aws_key, "AWS_ACCESS_KEY_ID not found in environment"
-    assert aws_secret, "AWS_SECRET_ACCESS_KEY not found in environment"
+    if not aws_key:
+        raise ValueError("AWS_ACCESS_KEY_ID not found in environment")
+    if not aws_secret:
+        raise ValueError("AWS_SECRET_ACCESS_KEY not found in environment")
 
     secret_parts = [
         "TYPE S3",
-        f"KEY_ID '{aws_key}'",
-        f"SECRET '{aws_secret}'",
-        f"REGION '{aws_region}'",
+        f"KEY_ID '{_sql_escape(aws_key)}'",
+        f"SECRET '{_sql_escape(aws_secret)}'",
+        f"REGION '{_sql_escape(aws_region)}'",
     ]
 
     if endpoint:
-        secret_parts.append(f"ENDPOINT '{endpoint}'")
+        secret_parts.append(f"ENDPOINT '{_sql_escape(endpoint)}'")
     if url_style:
-        secret_parts.append(f"URL_STYLE '{url_style}'")
+        secret_parts.append(f"URL_STYLE '{_sql_escape(url_style)}'")
 
     conn.execute(
         f"""
