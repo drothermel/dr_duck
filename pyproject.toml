@@ -48,6 +48,7 @@ quote-style = "double"
 
 [dependency-groups]
 dev = [
+    "pyarrow>=23.0.0",
     "pytest>=8.0.0",
     "ruff>=0.9.0",
     "ty>=0.0.14",
