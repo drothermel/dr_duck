@@ -1,9 +1,3 @@
-from dr_duck.normalization import is_nully, normalize_str, convert_timestamp
-from dr_duck.types import TaskArtifactType
+from dr_duck.connection import open_motherduck_connection
 
-__all__ = [
-    "is_nully",
-    "normalize_str",
-    "convert_timestamp",
-    "TaskArtifactType",
-]
+__all__ = ["open_motherduck_connection"]
