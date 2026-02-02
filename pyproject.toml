@@ -3,17 +3,32 @@ name = "dr-duck"
 version = "0.1.0"
 description = "Simple MotherDuck connection utilities"
 readme = "README.md"
+license = "MIT"
 authors = [
     { name = "Danielle Rothermel", email = "danielle.rothermel@gmail.com" }
 ]
 requires-python = ">=3.10"
+keywords = ["duckdb", "motherduck", "database", "analytics"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Typing :: Typed",
+]
 dependencies = [
     "duckdb>=1.0.0",
     "python-dotenv>=1.0.0",
 ]
 
-[project.optional-dependencies]
-dev = ["ruff>=0.4.0", "pytest>=8.0.0"]
+[project.urls]
+Homepage = "https://github.com/drothermel/dr_duck"
+Repository = "https://github.com/drothermel/dr_duck"
 
 [build-system]
 requires = ["hatchling"]
@@ -29,3 +44,10 @@ include = ["src/**/*.py"]
 [tool.ruff.format]
 indent-style = "space"
 quote-style = "double"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.9.0",
+    "ty>=0.0.14",
+]
